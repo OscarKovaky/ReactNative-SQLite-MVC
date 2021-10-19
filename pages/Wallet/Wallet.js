@@ -1,21 +1,19 @@
-import React from "react";
+import React,{useContext} from "react";
 import {
   NativeBaseProvider,Center
 } from 'native-base';
 import WalletSeach from "./WalletSeach";
 import WalletCreate from "./WalletCreate";
 import WalletList from "./WalletList";
-
+import {UserContext} from '../hooks/ContextDatauser';
 
 
 
 const Wallet = ()=>{
- 
+  const {customTheme} = useContext(UserContext);
     return (
-      <NativeBaseProvider>
-        <Center flex={1} px={2}>
-       <WalletList/>
-      </Center> 
+      <NativeBaseProvider theme={customTheme}>     
+           <WalletList/>  
       </NativeBaseProvider>
     );
 }

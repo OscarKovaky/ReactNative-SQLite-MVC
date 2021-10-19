@@ -1,5 +1,5 @@
 import SQLite from "react-native-sqlite-storage"
-
+import React,{useState,useEffect} from "react"
 
 SQLite.DEBUG(true);
 SQLite.enablePromise(false);
@@ -11,16 +11,17 @@ var db  = SQLite.openDatabase({name:"localBank",location:"default" ,createFromLo
     console.log("ERROR: " + error);
   }
 )
-  
+ 
+
 
 
 
 const CONSULTA_USER  = "SELECT name FROM user  ";
-const CREAR_USER = "INSERT INTO user (name,lastName) VALUES (Oscar,Ramirez)";
+const CREAR_USER = "INSERT INTO user (name,lastName) VALUES (?,?)";
 
 const CREAR_BILLETERA = "INSERT INTO bank (name,balance,dateCreation,dateInit) VALUES(?,?,?,?)";
 const DELETE_BILLETERA = "DELETE FROM bank WHERE bankId = (value)";
-const ABONAR_BILLETERA = "INSERT INTO bank (balance) VALUES(34) WHERE bankId =  ";
+const ABONAR_BILLETERA = "INSERT INTO bank (balance) VALUES(?) WHERE bankId =  ";
 const UPDATE_BILLETERA = "UPDATE bank SET name = (), balance = ()  ";
 const OBTEN_BILLETERAS = "SELECT * FROM bank ORDER BY dateCreation";
 const BUSCAR_BILLETERA = "SELECT bank FROM name";
@@ -28,59 +29,79 @@ const BUSCAR_BILLETERA = "SELECT bank FROM name";
 
 
 
-const getUser = ()=> {
-    const message  = {
+const  getUser = async ()=> {
+    const user  = {
         result : [],
         des : ""
     }
        
-    return  new Promise ((resolve,reject) =>{
-    
-    db.transaction(function(txn){
+   await db.transaction(function(txn){
 
-      txn.executeSql(CONSULTA_DB,[],(txn,res)=>{
-           
-            console.log(res.rows);
-            
-            if(res.rowsAffected > 0){
-
+      txn.executeSql(CONSULTA_USER,[],(txn,res)=>{
+                                
                 for (let i = 0; i < res.rows.length; ++i){
-                    let item = res.rows.item(i);
-                    let user = new user(item.name)
-                    message.result.push(user);
+                
+                  user.result.push(res.rows.item(i)) 
                 }
-                message.des = "Se cargaron los datos con exito"
-                resolve({result: message.result,message:message.des})
-            }
-               
-            
-        }, error => {
-            message.result = [];
-            message.des = `${error}`
-            resolve({result: message.result,message:message.des})
+                user.des = "Se cargaron los datos con exito"
+                                                
+        }, error => {        
+            user.des = `${error}`
+           
         })      
-})
+    })
 
-  
-})
+
+ return user;
 
 }
 
+const AbonarBilletera = () =>{
+
+}
+
+const CreateUser = (name,lastName)=> {
+    const message  = {
+        result : false,
+        des: ""
+    }
+  
+    db.transaction(function(txn){
+        
+        txn.executeSql(CREAR_USER,[name,lastName],(txn,res)=>{
+          
+            if(res.rowsAffected > 0){
+                message.result = true,
+                message.des = "Bienvenido!"
+            }else {
+                message.result = false,
+                message.des = "Ocurrio un error"
+            }
+            console.log(message.des)
+         
+        },(error)=> {
+            message.result = false,
+            message.des = `${error}`
+     
+        })
+        
+    })
+
+   return message;
+}
 
 
-
-
-const CreateBank = (userNameWallet,monto,fecha,fechaObjetivo) => {
-    return new Promise ((resolve,reject) =>{
+const CreateBank = (UserData) => {
+        const {userNameWallet,monto,fechaObjetivo} = UserData
         const message  = {
             result : false,
             des: ""
         }
-      
+        console.log(UserData)
         db.transaction(function(txn){
             
-            txn.executeSql(CREAR_BILLETERA,[userNameWallet,monto,fecha,fechaObjetivo],(txn,res)=>{
-              
+            txn.executeSql(CREAR_BILLETERA,[userNameWallet,monto,new Date().getUTCDate(),fechaObjetivo],(txn,res)=>{
+              console.log(res.rowsAffected)
                 if(res.rowsAffected > 0){
                     message.result = true,
                     message.des = "Se creo la billetera"
@@ -89,54 +110,82 @@ const CreateBank = (userNameWallet,monto,fecha,fechaObjetivo) => {
                     message.des = "Ocurrio un error"
                 }
                 console.log(message.des)
-                resolve({result: message.result,message:message.des})
+             
             },(error)=> {
                 message.result = false,
                 message.des = `${error}`
-                resolve({result: message.result,message:message.des})
+         
             })
             
         })
-    })
        
-
+       return message.des;
 }
 
 
 
-const DeleteBank = () => {
+const DeleteBank = (id) => {
+    const message  = {
+        result : false,
+        des: ""
+    }
+  
+    db.transaction(function(txn){
+        
+        txn.executeSql(DELETE_BILLETERA,[id],(txn,res)=>{
+          
+            if(res.rowsAffected > 0){
+                message.result = true,
+                message.des = "Se boro la billetera"
+            }else {
+                message.result = false,
+                message.des = "Ocurrio un error"
+            }
+            console.log(message.des)
+         
+        },(error)=> {
+            message.result = false,
+            message.des = `${error}`
+     
+        })
+        
+    })
 
+   return message;
 }
 
 const UpdateCheck = () => {
 
 }
 
-const WalletsList = ()=> {
-    var message = {
-        result: true,
-        des: ""
-    }
-    var list = [];
-    db.transaction((txn)=>{
+const WalletsList =  ()=> {
+    const [list, setList] = useState([]);
+    useEffect(() => {
+    
+        db.transaction((txn)=>{
       
-        txn.executeSql(OBTEN_BILLETERAS,[],(txn,res)=>{
-                   
-            for (let i = 0; i < res.rows.length; ++i){
+            txn.executeSql(OBTEN_BILLETERAS,[],(txn,res)=>{
              
-                list.push(res.rows.item(i))  
-                 
-            }
-                
-          
-            console.log(" la longitud de la lista es:"+list.length)
-          
-        },(error)=> {
-            message.result = false,
-            message.des = `${error}`
+                let walletList = []; 
+                for (let i = 0; i < res.rows.length; i++){                        
+                   walletList.push(res.rows.item(i))
+                   setList(walletList)
+                   
+                }
+                    
+                      
+            },(error)=> {
+             
+            })
         })
-    })
-    return list;
+    
+  
+   
+ 
+    }, []);
+  
+  
+   return list;
 }
 
 

@@ -12,7 +12,8 @@ import {
   Button,
   HStack,
   Center,
-  ScrollView
+  ScrollView,
+  PresenceTransition
 
 } from 'native-base';
 import  {CreateBank}  from "../transactionsWelcome/Actions"
@@ -21,54 +22,58 @@ import DatePicker from 'react-native-date-picker'
 
 
 const WalletCreate = () => {
- 
-  const [userNameWallet, setUserWallet] = useState('');
   const [error,setError] = useState({})
-
-  const [monto, setMonto] = useState('');
-  const [fecha, setFecha] = useState(new Date());
-  
   const [active, setActive] = useState(false);
+  
+
   const[enviado,SetEnviado] = useState(false);
 
-  const [date, setDate] = useState(new Date())
+  const [fechaObjetivo, setDate] = useState(new Date())
+
+  const [user,SetUserData] = useState({
+    userNameWallet:"",
+    monto:"",
+    fecha: new Date().getTime(),
+    fechaObjetivo: fechaObjetivo.toDateString()
+  })
+
   const [dateText,SetDateText]= useState("Desea establecer una fecha objetivo? (opcional)")
  
 
   const Validar = ()=> {
     
-      if (userNameWallet === undefined) {
+      if (user.userNameWallet === "") {
         setError({
           ...error,
           name: 'Name is required',
         });
         return false;
-      } else if (userNameWallet.length <= 3) {
-        setError({
-          ...error,
-          name: 'Name is too short',
-        });
-        return false;
-      }
+      } 
       return true;
-  }
+      }    
+  
 
   const Enviar = () => {
     const result =  Validar() ? true : false;
    
  
     if(result === true){
-      CreateBank(userNameWallet, monto, fecha, date).catch(errr => {
-        console.log(errr);
-      });
-      ClearInput();
+     const data = ()=> CreateBank({...user});
+      data()
+      console.log(data)
+      if(data === "Se creo la billetera"){
+
+        ClearInput();
+      }else{
+
+      }
+      
     
     }  
   };
 
   const ClearInput = () => {
-    setMonto('');
-    setUserWallet('');
+    SetUserData({})
   };
 
 
@@ -78,16 +83,15 @@ const WalletCreate = () => {
   };
 
   const Confirmar = () => {
-    
+    setDate(fechaObjetivo)
   };
 
   const FechaObjetivoCancel = () => {
-  
     setActive(false); 
     SetDateText("Desea establecer una fecha objetivo? (opcional)");
   };
 
-  const statusArray = [{status:"success",title:"Cartera creada!"},{status:"error",title:"el nombre de la cartera es requerido!"}]
+  
 
   return (
    
@@ -114,13 +118,13 @@ const WalletCreate = () => {
           </FormControl.Label>
           <Input
             name="name"
-            value={userNameWallet}
-            onChangeText={userNameWallet => setUserWallet(userNameWallet)}
+            value={user.userNameWallet}
+            onChangeText={(value) => SetUserData({name: value})}
             type="text"
             placeholder="Nombre de la cartera"
           />
           {'name' in error ?
-        <FormControl.ErrorMessage _text={{fontSize: 'xs', color: 'error.500', fontWeight: 500}}>Error:</FormControl.ErrorMessage>
+        <FormControl.ErrorMessage _text={{fontSize: 'xs', color: 'error.500', fontWeight: 500}}>Nombre es requerido:</FormControl.ErrorMessage>
         :
         <FormControl.HelperText _text={{fontSize: 'xs'}}>
           El nombre debe contener al menos 4 caracteres
@@ -130,9 +134,9 @@ const WalletCreate = () => {
           <FormControl>
           <FormControl.Label
             _text={{color: 'muted.700', fontSize: 'sm', fontWeight: 600}}>
-            { active === true ?   dateText + "   " + date.toLocaleDateString("es-mx") : dateText }
-          </FormControl.Label>
-            <Box flexDirection="row" alignSelf="center" >
+            { active === true ?   dateText + "   " + fechaObjetivo.toLocaleDateString("es-mx") : dateText }
+          </FormControl.Label>       
+        <Box flexDirection="row" alignSelf="center" >
             <Button 
                 height={50}
                 width={50}     
@@ -143,9 +147,20 @@ const WalletCreate = () => {
               onPress={active === false ? FechaObjetivo: FechaObjetivoCancel}>
               {active === false ?  "+" : "-"} 
             </Button>  
-           
-            </Box>       
-            { active === true ? <DatePicker locale="es-mx" androidVariant = 'nativeAndroid' date={date} onDateChange={setDate} />:console.log("Falso")}
+            </Box> 
+                <PresenceTransition
+            visible={active}
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+              transition: {
+                duration: 250,
+              },
+            }}
+          > 
+            { active === true ? <DatePicker locale="es-mx" androidVariant = 'nativeAndroid' date={fechaObjetivo} onDateChange={setDate} />:console.log("Falso")}
             <Box alignItems="center">
             {active === true ? <Button 
                 height={50}
@@ -156,8 +171,9 @@ const WalletCreate = () => {
               _text={{color: 'white'}}        
               onPress={Confirmar}>
              Confirmar
-            </Button> : "" }
+            </Button> : "" }        
             </Box>
+        </PresenceTransition>
           </FormControl>
          
         <FormControl mb={5}>
@@ -168,9 +184,9 @@ const WalletCreate = () => {
           <Input
             type="text"
             name="monto"
-            value={monto}
+            value={user.monto}
             placeholder="$"
-            onChangeText={monto => setMonto(monto)}
+            onChangeText={(value) => SetUserData({...user,monto: value})}
           />
           <FormControl.Label
             _text={{color: 'muted.700', fontSize: 'sm', fontWeight: 600}}>
@@ -179,9 +195,9 @@ const WalletCreate = () => {
           <Input
             type="text"
             name="monto"
-            value={monto}
+            value={user.monto}
             placeholder="$"
-            onChangeText={monto => setMonto(monto)}
+            onChangeText={(value) => SetUserData({...user,monto: value})}
           />
 
           <Link
